@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:task="http://www.springframework.org/schema/task"
+             xmlns:jms="http://www.springframework.org/schema/integration/jms"
+             xmlns:amq="http://activemq.apache.org/schema/core"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/task
+			http://www.springframework.org/schema/task/spring-task.xsd
+			http://www.springframework.org/schema/integration
+			http://www.springframework.org/schema/integration/spring-integration.xsd
+			http://www.springframework.org/schema/integration/jms
+			http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+            http://activemq.apache.org/schema/core
+            http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+    <amq:connectionFactory id="connectionFactory" brokerURL="tcp://localhost:61616"/>
+
+    <amq:topic id="demoTopic" physicalName="topic.demo"/>
+
+    <task:executor id="taskExecutor" pool-size="5"/>
+
+    <channel id="jmsInChannel">
+        <dispatcher task-executor="taskExecutor"/>
+    </channel>
+
+    <jms:message-driven-channel-adapter id="msgDrivenIn"
+                                        auto-startup="false"
+                                        destination="demoTopic"
+                                        channel="jmsInChannel"
+                                        pub-sub-domain="true"/>
+
+    <channel id="jsonChannel"/>
+
+    <json-to-object-transformer input-channel="jmsInChannel" output-channel="jsonChannel" type="java.util.Map"/>
+
+    <beans:bean id="demoBean" class="org.springframework.integration.samples.jms.DemoBean"/>
+
+    <service-activator id="activator" input-channel="jsonChannel" output-channel="loggingChannel" requires-reply="false" ref="demoBean"/>
+
+    <channel id="loggingChannel"/>
+
+    <logging-channel-adapter channel="loggingChannel"/>
+
+</beans:beans>
